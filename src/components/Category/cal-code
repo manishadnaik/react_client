@@ -1,0 +1,333 @@
+import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams } from "react-router";
+import Swal from "sweetalert2";
+import { DUMMY_IMAGE, SERVER_URL } from "../../config/variables";
+import {
+  GET_CATEGORY_DETAILS,
+  GET_CATEGORY_MAX_AMOUNT,
+  POPULATE_REMAINING_AMOUNT,
+  REMOVE_SELECTED_CATEGORY,
+  UPDATE_CATEGORY_DETAILS,
+  UPDATE_CATEGORY_TO_LIST,
+} from "../../store/Category/actionTypes";
+import {
+  GET_EXPENSES,
+  REMOVE_SELECTED_EXPENSES,
+} from "../../store/Expense/actionTypes";
+import ExpenseList from "../Expense/ExpenseList";
+import MainAmount from "../Expense/MainAmount";
+import AddRow from "../Shared/AddRow";
+import Modal from "../Shared/Modal";
+
+const CategoryDetails = (props) => {
+  const categoryId = useParams().categoryId;
+  // toggle addExpense btn
+  const [showAddExpenseBtn, setShowAddExpenseBtn] = useState(false);
+  const [remainingAmount, setRemainingAmount] = useState(0);
+  const [totalExpenseAmount, setTotalExpenseAmount] = useState(0);
+  const [showModal, setShowModal] = useState(false);
+  const [maximumAmount, setMaximumAmount] = useState(0);
+  const [maximumAmountError, setMaximumAmountError] = useState(false);
+  var category = useSelector((state) => state.category.details);
+  var expenses = useSelector((state) => state.expense).all;
+  const dispatch = useDispatch();
+  const getCategoryDetails = async () => {
+    const response = await axios({
+      method: "GET",
+      url: SERVER_URL + "/categories/" + categoryId,
+      responseType: "json",
+    }).catch((err) => console.log(err));
+    dispatch({
+      type: GET_CATEGORY_DETAILS,
+      payload: response.data.category,
+    });
+    dispatch({
+      type: GET_CATEGORY_MAX_AMOUNT,
+      payload: response.data.category.max_amount,
+    });
+    dispatch({
+      type: GET_EXPENSES,
+      payload: response.data.expenses,
+    });
+    // console.log(response);
+    return response;
+  };
+  const calculateAmounts = (category, expenses) => {
+    // console.log("max", category.max_amount);
+    let expenseAmount = 0;
+    for (let exp of Object.values(expenses)) {
+      expenseAmount += exp.max_amount;
+    }
+    // console.log("exp", expenseAmount);
+    let remainingBalance = category.max_amount - expenseAmount;
+    // console.log("bal", remainingBalance);
+    let maxAmount = category.max_amount;
+    return { maxAmount, expenseAmount, remainingBalance };
+  };
+
+  useEffect(() => {
+    // console.log("1st effect");
+    if (
+      !Object.keys(category).length ||
+      (category && category._id !== categoryId)
+    ) {
+      getCategoryDetails();
+    }
+    return () => {
+      dispatch({ type: REMOVE_SELECTED_CATEGORY, payload: {} });
+      dispatch({ type: REMOVE_SELECTED_EXPENSES, payload: {} });
+    };
+  }, []); // useEffect will be called number of times the arg.length
+
+  useEffect(() => {
+    if (Object.keys(category).length) {
+      // console.log("2nd effect", category);
+      setMaximumAmount(category.max_amount);
+    }
+  }, [category]);
+
+  useEffect(async () => {
+    console.log("3nd effect out", expenses.length);
+    if (expenses) {
+      // console.log("3nd effect in", expenses.length);
+      let { maxAmount, expenseAmount, remainingBalance } =
+        await calculateAmounts(category, expenses);
+      setMaximumAmount(maxAmount);
+      setTotalExpenseAmount(expenseAmount);
+      setRemainingAmount(remainingBalance);
+    }
+  }, [expenses]);
+
+  useEffect(() => {
+    // console.log("max amount changed");
+    if (Object.keys(category).length) {
+      setShowAddExpenseBtnBasedOn();
+    }
+  }, [maximumAmount]);
+  // this effect will handle hiding the addExpense btn when new expense with final balce is added
+  useEffect(() => {
+    setShowAddExpenseBtnBasedOn();
+    dispatch({
+      type: POPULATE_REMAINING_AMOUNT,
+      payload: remainingAmount,
+    });
+  }, [remainingAmount]);
+  const setShowAddExpenseBtnBasedOn = () => {
+    // console.log(category.max_amount);
+    let { maxAmount, expenseAmount, remainingBalance } = calculateAmounts(
+      category,
+      expenses
+    );
+    if (maximumAmount > 0 && remainingBalance > 0) {
+      setMaximumAmountError(false);
+    }
+    if (remainingBalance == 0) {
+      setMaximumAmountError(false);
+    }
+
+    if (maximumAmount < totalExpenseAmount) {
+      setMaximumAmountError(true);
+    }
+    // console.log(category.max_amount + "===" + maximumAmount);
+    // console.log(category.max_amount === maximumAmount);
+    if (
+      category.max_amount &&
+      !maximumAmountError &&
+      remainingBalance > 0 &&
+      category.max_amount === maximumAmount
+    ) {
+      setShowAddExpenseBtn(true);
+    } else {
+      setShowAddExpenseBtn(false);
+    }
+    setRemainingAmount(remainingBalance);
+  };
+  const openNewRowHandler = () => {
+    setShowModal(true);
+  };
+  const closeNewRowHandler = () => {
+    setShowModal(false);
+  };
+
+  // debugger;
+  // console.log(maximumAmount);
+  const maximumAmountHandler = (e) => {
+    console.log("on change called");
+    // console.log(e.target.value);
+    let enteredMaxAmtValue = e.target.value;
+    setMaximumAmount(enteredMaxAmtValue);
+    let r = enteredMaxAmtValue - totalExpenseAmount;
+    setRemainingAmount(r);
+    console.log(r);
+  };
+
+  const saveAmountsHandler = (e) => {
+    e.preventDefault();
+    // call api to update the values
+    const savedAmounts = axios({
+      method: "PUT",
+      url: SERVER_URL + "/categories/" + categoryId,
+      data: {
+        max_amount: maximumAmount,
+      },
+    })
+      .then((res) => {
+        Swal.fire(
+          "Updated!",
+          "Max amount for this category updated!.",
+          "success"
+        );
+        console.log(res.data);
+        // dispatch to update the category value
+        dispatch({
+          // add data to all list
+          type: UPDATE_CATEGORY_DETAILS,
+          payload: res.data.category,
+        });
+        setShowAddExpenseBtnBasedOn();
+        console.log("remainingAmount=>", remainingAmount);
+        dispatch({
+          type: POPULATE_REMAINING_AMOUNT,
+          payload: remainingAmount,
+        });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+  // {
+  //   console.log(category);
+  // }
+  return (
+    <>
+      {Object.keys(category).length === 0 && !expenses ? (
+        <div className="text-center">
+          <h4>Loading...</h4>
+        </div>
+      ) : (
+        <div
+          className="category-container"
+          style={{
+            backgroundImage: `url(${
+              category.imageUrl
+                ? `${SERVER_URL}/${category.imageUrl}`
+                : { DUMMY_IMAGE }
+            })`,
+            overflow: "auto",
+          }}
+        >
+          <div className="col-sm-12" style={{ paddingTop: "10px" }}>
+            <h4>
+              {category.title} - Category Details
+              {showAddExpenseBtn && (
+                <a
+                  href="#"
+                  className="btn btn-sm btn-primary float-right"
+                  style={{ float: "right" }}
+                  onClick={openNewRowHandler}
+                >
+                  Add Expense
+                </a>
+              )}
+            </h4>
+            <p>{category.description}</p>
+            <hr />
+            {/* main amount html starts */}
+            {/* {console.log("maximumAmount==>", maximumAmount)}
+      {console.log("category==>", category)} */}
+            <form onSubmit={saveAmountsHandler}>
+              <div className="form-row">
+                <div className="form-group col-md-3">
+                  <label htmlFor="maxAmount" className="col-form-label">
+                    Max. Amount
+                  </label>
+                  <div className="">
+                    <input
+                      type="number"
+                      className="form-control"
+                      name="maximumAmount"
+                      id="maximumAmount"
+                      value={category}
+                      onChange={maximumAmountHandler}
+                      required
+                    />
+                  </div>
+                  {maximumAmountError && (
+                    <div className="alert alert-danger">
+                      Max. amount cannot be zero or less then total expenses
+                    </div>
+                  )}
+                </div>
+                <div className="form-group col-md-3">
+                  <label htmlFor="totalExpenses" className="col-form-label">
+                    Total Expenses
+                  </label>
+                  <div className="">
+                    <input
+                      type="number"
+                      className="form-control"
+                      name="totalExpenses"
+                      id="totalExpenses"
+                      value={totalExpenseAmount}
+                      readOnly
+                    />
+                  </div>
+                </div>
+                <div className="form-group col-md-3">
+                  <label htmlFor="remainingAmount" className="col-form-label">
+                    Remaining Amount
+                  </label>
+                  <div className="">
+                    <input
+                      type="number"
+                      className="form-control"
+                      name="remainingAmount"
+                      id="remainingAmount"
+                      value={remainingAmount}
+                      // onChange={expenseAmountHandler}
+                      readOnly
+                    />
+                  </div>
+                </div>
+                <div className="form-group col-md-3">
+                  <p style={{ marginTop: "1.8rem" }}></p>
+                  <button
+                    type="submit"
+                    className={`btn mt-4  ${
+                      maximumAmountError ? "btn-secondary" : "btn-primary"
+                    }`}
+                    disabled={maximumAmountError ? "disabled" : ""}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            {/* main amounts html ends */}
+            <div>
+              {/* list of expenses */}
+              <ExpenseList category={category} />
+            </div>
+            {showModal && (
+              <AddRow
+                showModal={showModal}
+                closeModal={closeNewRowHandler}
+                headerText={"Add New Expense"}
+                addObjFor={"expenses"}
+                parent={category._id}
+                schema={"EXPENSE"}
+                // remainingAmount={remainingAmount}
+                mode={"add"}
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default CategoryDetails;

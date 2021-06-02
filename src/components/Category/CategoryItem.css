@@ -1,0 +1,14 @@
+.row-image {
+  height: 20px;
+  width: 40px;
+  cursor: pointer;
+}
+.image-wrapper {
+  align-items: center;
+  text-align: center;
+  background: #6c757d;
+}
+.modal-image {
+  height: 20em;
+  width: 28em;
+}
