@@ -2,6 +2,7 @@ import "./App.css";
 import { BrowserRouter as Router, Link, Route, Switch } from "react-router-dom";
 import Routes from "./components/Navigation/Routes";
 import { useEffect } from "react";
+import { Suspense } from "react";
 
 function App() {
   // keeping the js code together as its small
@@ -22,7 +23,9 @@ function App() {
   return (
     <main>
       <Router>
-        <Routes />
+        <Suspense fallback={<div className="text-center">Loading...</div>}>
+          <Routes />
+        </Suspense>
       </Router>
     </main>
   );

@@ -1,11 +1,14 @@
 import React from "react";
 import { Switch, Route, useLocation, Redirect } from "react-router-dom";
 import Login from "../Auth/Login";
-import CategoryDetails from "../Category/CategoryDetails";
-import Dashboard from "../Dashboard/Dashboard";
+import Home from "../Home/Home";
+// import CategoryDetails from "../Category/CategoryDetails";
+// import Dashboard from "../Dashboard/Dashboard";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import Home from "../Home/Home";
+
+const Dashboard = React.lazy(() => import("../Dashboard/Dashboard"));
+const CategoryDetails = React.lazy(() => import("../Category/CategoryDetails"));
 
 const Routes = () => {
   function LogoutHandler() {

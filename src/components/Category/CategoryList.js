@@ -18,7 +18,6 @@ const CategoryList = (props) => {
   const closeNewRowHandler = () => {
     setShowModal(false);
   };
-  // console.log(categories);
   const dispatch = useDispatch();
   const GetCategories = async () => {
     const response = await axios({
