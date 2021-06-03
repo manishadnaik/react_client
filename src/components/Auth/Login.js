@@ -3,6 +3,7 @@ import "./Login.css";
 import axios from "axios";
 import { withRouter } from "react-router-dom";
 import LoginJsx from "./LoginJsx";
+import { SERVER_URL } from "../../config/variables";
 
 const Login = (props) => {
   //   let history = useHistory();
@@ -92,7 +93,7 @@ const Login = (props) => {
     setIsLoginLoading(true);
     const response = await axios({
       method: "POST",
-      url: "http://localhost:1000/authenticate",
+      url: SERVER_URL + "/authenticate",
       data: { email, password },
       responseType: "json",
     });

@@ -77,7 +77,7 @@ const AddRow = (props) => {
     return validateDescription(description);
   };
   const expenseAmountHandler = (e) => {
-    let expenseAmt = convertToFixed(e.target.value);
+    let expenseAmt = e.target.value;
     validateExpenseAmount(expenseAmt);
   };
   const imageHandler = (e) => {
@@ -212,17 +212,12 @@ const AddRow = (props) => {
     var response;
     if (mode == "add") {
       response = await axios
-        .post(
-          SERVER_URL + "/" + addObjFor,
-          formData,
-          { data: rowObj },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Bearer " + credentials.token,
-            },
-          }
-        )
+        .post(SERVER_URL + "/" + addObjFor, formData, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + credentials.token,
+          },
+        })
         .catch((err) => {
           //set error display to on
           displayServerValidationErrors(err.response.data);

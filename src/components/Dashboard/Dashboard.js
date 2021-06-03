@@ -39,9 +39,7 @@ const Dashboard = () => {
         params: {
           month: months,
         },
-        data: {
-          firstName: "Fred",
-        },
+        headers: { Authorization: "Bearer " + credentials.token },
       })
       .catch((error) => console.log(error));
   };
@@ -51,8 +49,9 @@ const Dashboard = () => {
 
   useEffect(() => {
     getExpenseForMonth().then((res) => {
-      console.log(res.data);
-      setTotalExpenses(res.data.totalExpense);
+      if (typeof res !== "undefined") {
+        setTotalExpenses(res.data.totalExpense);
+      }
     });
   }, [months]);
 
@@ -60,7 +59,6 @@ const Dashboard = () => {
     e.preventDefault();
     ifDatesAreEqual();
     getExpenseForMonth().then((res) => {
-      console.log(res.data);
       setTotalExpenses(res.data.totalExpense);
     });
   };

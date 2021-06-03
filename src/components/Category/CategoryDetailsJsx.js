@@ -62,13 +62,14 @@ const CategoryDetailsJsx = ({ params }) => {
                       }`}
                       name="maximumAmount"
                       id="maximumAmount"
-                      value={maximumAmount}
+                      value={maximumAmount ? maximumAmount : 0}
                       onChange={maximumAmountHandler}
                       required
                       step=".01"
                     />
                   </div>
                 </div>
+
                 <div className="form-group col-md-3">
                   <label htmlFor="totalExpenses" className="col-form-label">
                     Total Expenses
@@ -94,7 +95,7 @@ const CategoryDetailsJsx = ({ params }) => {
                       className="form-control"
                       name="remainingAmount"
                       id="remainingAmount"
-                      value={remainingAmount}
+                      value={remainingAmount ? remainingAmount : 0}
                       readOnly
                     />
                   </div>
